@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="main();" 
+	layout="absolute" 
+	width="624" height="550" borderColor="#9893E4" borderThicknessBottom="2" 
+	borderThicknessLeft="2" borderThicknessRight="2" backgroundColor="#E2E2E2" 
+	borderAlpha="100" title="编辑建筑" fontSize="13">
+	<mx:Script>
+		<![CDATA[
+			import com.heptafish.mapeditor.events.MapEditorEvent;
+			import com.heptaFish.common.hack.HeptaFishGC;
+			import com.heptafish.mapeditor.utils.MapEditorUtils;
+			import com.heptaFish.common.loader.impl.ImageLoader;
+			import com.heptafish.mapeditor.layers.GridLayer;
+			import mx.core.UIComponent;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.controls.TextInput;
+			import mx.controls.Image;
+			import mx.managers.PopUpManager;
+			
+			
+			///// 打开时传入参数 ///////////
+			public var imgId:int;				//图片id
+			public var selectFile:File;			//图片文件
+			public var relativePath:String;		//相对路径，标题用
+			public var imgLibXML:XML;			//库的xml对象，保存时需要回传
+			///////////////////////////////
+			
+			private var _cellWidth:int;	//一个网格的象素宽
+			private var _cellHeight:int;	//一个网格的象素高
+			//网格层大小
+			private var mapWidth:int;
+			private var mapHeight:int;
+			private var _gridLayer:GridLayer;	//网格层 
+			
+			private var walkableArray:Array;	//boolean
+			private var shadowArray:Array;		//boolean
+			private var walkableImgArray:Array = new Array();	//bitmap
+			
+			private var brushBitmap:Bitmap;	//跟随光标用的
+			private var brushData:BitmapData;	
+						
+			private var baseDis:UIComponent;//基本UIComponent，为了后面可以直接add as3对象
+			
+			private var imgLoader:ImageLoader;	//显示图片的
+			private var img:Bitmap;
+			
+			private var disScale:Number = 1;
+		
+			private function main():void
+			{
+				PopUpManager.centerPopUp(this);
+				this.title = "编辑建筑 -- " + this.relativePath;
+				init();
+			}
+			
+			private function init():void
+			{
+				this._cellWidth = this.parentApplication._cellWidth;
+				this._cellHeight = this.parentApplication._cellHeight;
+				
+				//基本UIComponent，为了后面可以直接add as3对象
+				this.baseDis = new UIComponent();
+				this.workCanvas.addChild(this.baseDis);
+				
+				//载入图片
+				this.imgLoader = new ImageLoader();
+				this.imgLoader.load(this.selectFile.url);
+				this.imgLoader.addEventListener(Event.COMPLETE, hLoadComplete);
+				this.setWalkableBtn.setFocus();
+				this.addEventListener(KeyboardEvent.KEY_DOWN, hKeyDown);
+			}
+			/**
+			 * 图像载入并刷新显示后调用
+			 */
+			private function hLoadComplete(event:Event):void
+			{
+				
+				img = new Bitmap(event.target._data);
+				img.x = this._cellWidth;
+				img.y = this._cellHeight;
+				this.baseDis.addChild(img);
+				//网格层大小
+				this.mapWidth = img.width + this._cellWidth*2;
+				this.mapHeight = img.height + this._cellHeight * 6;
+				
+				_gridLayer = new GridLayer();
+				_gridLayer.drawGrid(img.width + this._cellWidth*3, img.height + this._cellHeight * 8, _cellWidth, _cellHeight);
+				this.baseDis.addChild(_gridLayer);
+				
+				//滚动条用（不重设滚动条不显示 bug?）
+//				this.imgLoader.width = this.imgLoader.width;
+//				this.imgLoader.height = this.imgLoader.height;
+//				this.baseDis.width = _gridLayer.width;
+//				this.baseDis.height = _gridLayer.height;
+				
+				//笔刷
+				this.brushBitmap = new Bitmap();
+				this.baseDis.addChild(this.brushBitmap);
+				
+				//初始化数组
+				var cnt:int = this.mapWidth*this.mapHeight;
+				this.walkableArray = new Array(cnt);
+//				this.shadowArray = new Array(cnt);
+				for (var i:int=0; i<this.mapWidth*this.mapHeight; i++)
+				{
+					this.walkableArray[i] = false;
+//					this.shadowArray[i] = false;
+				}
+				
+				//取出并设置以前保存的设置
+				this.restoreSaveData();
+			}
+			
+			/**
+			 * 取出并设置以前保存的设置
+			 */
+			private function restoreSaveData():void
+			{
+				var itemXml:XML = this.imgLibXML.item.(@id==this.imgId)[0];
+				
+				if (itemXml.@type != "building") return;	//以前从没有设置过该图片
+				
+				//取出以前编辑的数据 
+				var walkableStr:String = itemXml.walkable;
+//				var shadowStr:String = itemXml.shadow;
+				var wa:Array = walkableStr.split(",");
+//				var sa:Array = shadowStr.split(",");
+				var bm:Bitmap;
+				var walkableBrushData:BitmapData = MapEditorUtils.getWalkableSignMap(this._cellWidth, this._cellHeight);
+//				var walkableBrushData:Bi = new Shape();
+//				walkableBrushData.graphics.beginFill(0xFF0033,0.5);
+//				walkableBrushData.graphics.drawCircle(0,0,_cellHeight/4);
+//				walkableBrushData.graphics.endFill();
+				
+//				var shadowBrushData:BitmapData = Util.getShadowSignMap(this._cellWidth, this._cellHeight);
+				var ipos:int = 0;
+				var pt:Point;
+				//阻挡信息
+				for (var m:int=0; m<wa.length && wa.length>1; m+=2)
+				{
+					//根据网格中心的像素坐标取出网格坐标
+					pt = MapEditorUtils.getCellPoint(this._cellWidth, this._cellHeight, int(wa[m]), int(wa[m+1]));
+					ipos = pt.y * this.mapWidth + pt.x;
+//					ipos = int(wa[m+1]) * this.mapWidth + int(wa[m]);
+					this.walkableArray[ipos] = true;
+					bm = this.getSignData(pt.x, pt.y, walkableBrushData);
+//					bm = this.getSignData(int(wa[m]), int(wa[m+1]), walkableBrushData);
+					this.baseDis.addChild(bm);
+					this.walkableImgArray[ipos] = bm;
+				}
+				//图片位置
+				img.x = itemXml.@xoffset;
+				img.y = itemXml.@yoffset;
+			}
+			
+			
+			/**
+			 * w,a,s,d移动图片
+			 */
+			private function hKeyDown(event:KeyboardEvent):void
+			{
+				switch (event.keyCode)
+				{
+					case 65:	//a
+						img.x -= 1;
+						break;
+					case 87:	//w
+						img.y -= 1;
+						break;
+					case 68:	//d
+						img.x += 1;
+						break;
+					case 83:	//s
+						img.y += 1;
+						break;
+				}
+			}
+
+			/**
+			 * 设置阻挡和阴影
+			 */
+			private function hSetBtn(event:Event):void
+			{
+				var btn:Button = Button(event.target);
+				if (btn.selected == true)
+				{
+					if (btn.id == "setWalkableBtn")
+					{
+//						this.setShadowBtn.selected = false;
+//						this.brushBitmap = new Shape();
+//						brushBitmap.graphics.beginFill(0xFF0033,0.5);
+//						brushBitmap.graphics.drawCircle(0,0,_cellHeight/4);
+//						brushBitmap.graphics.endFill();
+						this.brushData = MapEditorUtils.getWalkableSignMap(this._cellWidth, this._cellHeight);
+						this.brushBitmap.bitmapData = this.brushData;
+					} 
+					
+					
+					this.workCanvas.addEventListener(MouseEvent.MOUSE_MOVE, hMouseMove);
+					this.workCanvas.addEventListener(MouseEvent.CLICK, hMouseClick);
+					this.workCanvas.addEventListener(MouseEvent.RIGHT_CLICK, hMouseRightClick);
+				} else {
+					this.brushBitmap = null;
+					this.workCanvas.removeEventListener(MouseEvent.MOUSE_MOVE, hMouseMove);
+					this.workCanvas.removeEventListener(MouseEvent.CLICK, hMouseClick);
+					this.workCanvas.removeEventListener(MouseEvent.RIGHT_CLICK, hMouseRightClick);
+				}
+			}
+			/**
+			 * 鼠标移动
+			 */
+			private function hMouseMove(event:MouseEvent):void
+			{
+				var pt:Point = MapEditorUtils.getCellPoint(this._cellWidth, this._cellHeight, 
+										_gridLayer.mouseX, _gridLayer.mouseY);
+				var px:int = pt.x * this._cellWidth + (pt.y & 1) * this._cellWidth / 2;
+				var py:int = pt.y * this._cellHeight / 2;
+				this.brushBitmap.x = px;
+				this.brushBitmap.y = py;
+			}
+			/**
+			 * 鼠标点击
+			 */
+			private function hMouseClick(event:MouseEvent):void
+			{
+				var pt:Point = MapEditorUtils.getCellPoint(this._cellWidth, this._cellHeight, 
+										_gridLayer.mouseX, _gridLayer.mouseY);
+				
+				var iposition:int = pt.y * this.mapWidth + pt.x;
+				var bm:Bitmap;
+				if (this.setWalkableBtn.selected == true)
+				{
+					if (this.walkableArray[iposition] == false)
+					{
+						bm = this.getSignData(pt.x , pt.y, this.brushData);
+						this.baseDis.addChild(bm);
+				
+						this.walkableArray[iposition] = true;
+						this.walkableImgArray[iposition] = bm;
+					}
+				} 
+			}
+
+			/**
+			 * 鼠标右键点击
+			 */
+			private function hMouseRightClick(event:MouseEvent):void
+			{
+				var pt:Point = MapEditorUtils.getCellPoint(this._cellWidth, this._cellHeight, 
+									_gridLayer.mouseX, _gridLayer.mouseY);
+				var px:int = pt.x * this._cellWidth + (pt.y & 1) * this._cellWidth / 2;
+				var py:int = pt.y * this._cellHeight / 2;
+				
+				var iposition:int = pt.y * this.mapWidth + pt.x;
+				
+				if (this.setWalkableBtn.selected == true)
+				{
+					if (this.walkableArray[iposition] == true)
+					{
+						this.walkableArray[iposition] = false;
+						this.baseDis.removeChild(this.walkableImgArray[iposition]);
+					}
+				} 
+			}
+			
+			/**
+			 * 显示/隐藏 网格
+			 */
+			private function hCilckShowGridBtn():void
+			{
+				if (_gridLayer.visible)
+				{
+					_gridLayer.visible = false;
+				} else {
+					_gridLayer.visible = true;
+				}
+			}
+			
+//			/**
+//			 * 放大
+//			 */
+//			private function hZoomInBtn():void
+//			{
+//				this.disScale += 0.1;
+//				this.baseDis.scaleX = this.disScale;
+//				this.baseDis.scaleY = this.disScale;
+//				
+//				this.zoomText.text = int(this.disScale * 100).toString();
+//			}
+//			
+//			/**
+//			 * 缩小
+//			 */
+//			private function hZoomOutBtn():void
+//			{
+//				if (this.disScale < 0.2) return;
+//				
+//				this.disScale -= 0.1;
+//				this.baseDis.scaleX = this.disScale;
+//				this.baseDis.scaleY = this.disScale;
+//				
+//				this.zoomText.text = int(this.disScale * 100).toString();
+//			}
+			
+			
+			/**
+			 * 保存
+			 */
+			private function hSaveBtn():void
+			{
+				var xmlItem:XML = this.imgLibXML.item.(@id==this.imgId)[0];
+				
+				//阻挡和阴影信息字符串, 偶数索引为x, 奇数索引为y
+				var pt:Point;
+				var walkableStr:String = null;
+				var shadowStr:String = null;
+				for (var i:int=0; i<this.mapHeight; i++)
+				{
+					for (var j:int=0; j<this.mapWidth; j++)
+					{
+						//网格中心的像素坐标 
+						pt = MapEditorUtils.getPixelPoint(this._cellWidth, this._cellHeight, j, i);
+						
+						if (this.walkableArray[i*this.mapWidth + j] == true)
+						{
+							if (walkableStr == null)
+							{
+								walkableStr = pt.x + "," + pt.y;
+//								walkableStr = j + "," + i;
+							} else {
+								walkableStr += "," + pt.x + "," + pt.y;
+//								walkableStr += "," + j + "," + i;
+							}
+						}
+					}
+				}
+				
+				//删除以前的阻挡和阴影信息
+				delete xmlItem.walkable;
+				
+				//新的阻挡和阴影信息
+				if (walkableStr != null)
+				{
+					xmlItem.appendChild(<walkable>{walkableStr}</walkable>);
+				}
+				
+				xmlItem.@type = "building";
+				xmlItem.@xoffset = img.x;
+				xmlItem.@yoffset = img.y;
+				this.imgLibXML.item.(@id==this.imgId)[0] = xmlItem;
+//				trace("this.imgLibXML"+this.imgLibXML.toXMLString());
+
+//				//写入xml文件
+//				var xmlFileStream:FileStream = new FileStream();
+//			    xmlFileStream.open(this.libXMLFile, FileMode.WRITE);
+//			    xmlFileStream.writeUTFBytes(this.imgLibXML.toXMLString());
+//			    xmlFileStream.close();
+			    
+			    //传回
+//				this.parentApplication._imageLib._configXML = this.imgLibXML;
+
+				var e:MapEditorEvent = new MapEditorEvent(MapEditorEvent.EDIT_BUILD_SUBMIT);
+				e.buildXml = imgLibXML;
+				dispatchEvent(e);
+				//关闭
+				this.closeWindow();
+			}
+
+			
+			/**
+			 * 得到阻挡和阴影笔刷图片
+			 */
+			private function getSignData(tx:int, ty:int, bd:BitmapData):Bitmap
+			{
+				var px:int = tx * this._cellWidth + (ty & 1) * this._cellWidth / 2;
+				var py:int = ty * this._cellHeight / 2;
+				
+				var bm:Bitmap = new Bitmap(bd);
+				bm.x = px;
+				bm.y = py;
+				return bm;
+			}
+			
+//			/**
+//			 * 得到阻挡和阴影笔刷图片
+//			 */
+//			private function getSignDataByPixel(px:int, py:int, bd:BitmapData):Bitmap
+//			{
+//				px = px - this._cellWidth / 2;
+//				py = py - this._cellHeight / 2;
+//				
+//				var bm:Bitmap = new Bitmap(bd);
+//				bm.x = px;
+//				bm.y = py;
+//				return bm;
+//			}
+//			
+			/**
+			 * 关闭 窗口
+			 */
+			private function closeWindow():void
+			{
+				if(!this.parentApplication._gridLayer.visible)
+					this.parentApplication._gridLayer.visible = true;
+				if(!this.parentApplication._mapLayer.visible)
+					this.parentApplication._mapLayer.visible = true;
+				PopUpManager.removePopUp(this);
+				HeptaFishGC.gc();
+			}
+		]]>
+	</mx:Script>
+	<mx:Canvas id="workCanvas" backgroundColor="#000000" left="10" top="72" right="100" bottom="14" horizontalScrollPolicy="auto" verticalScrollPolicy="auto" enabled="true">
+	</mx:Canvas>
+	<mx:Button x="532" y="393" label="取 消" click="closeWindow();" fontSize="12" width="75"/>
+	<mx:Button click="hSaveBtn();" x="532" y="345" label="保 存" fontSize="12" width="75"/>
+	<mx:Button id="setWalkableBtn" click="hSetBtn(event)" x="532" y="141" label="设置障碍" fontSize="12" fontWeight="normal" toggle="true" toolTip="左键设置，右键清除"/>
+	<mx:Button id="showGridBtn" click="hCilckShowGridBtn();" x="532" y="202" label="显示网格" fontWeight="normal" fontSize="12" toolTip="隐藏/显示网格层"/>
+	<mx:Label x="10" y="42" text="w,a,s,d控制图片微调" width="189" color="#EC0627"/>
+	
+	
+</mx:Panel>

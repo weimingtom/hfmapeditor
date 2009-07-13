@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InfoPanel xmlns="*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	height="107" width="225" title="鼠标信息" titleStyleName="panelTitle"
+	>
+	
+	<mx:Style>
+		.panelTitle{
+			color : #ffffff;	
+		}
+	</mx:Style>
+	
+	<mx:Script>
+		<![CDATA[
+		
+			[Bindable]
+			private var _px:String;
+			[Bindable]
+			private var _py:String;
+			[Bindable]
+			private var _ix:String;
+			[Bindable]
+			private var _iy:String;
+			
+			//填充内容信息
+			public function createContent(obj:Object):void{
+				_px = obj.px + "";
+				_py = obj.py + "";
+				_ix = obj.ix + "";
+				_iy = obj.iy + "";
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:Label x="29" y="37" text="像素坐标X：" color="0xffffff"/>
+	<mx:Text x="86.5" y="37" color="0xffffff" text="{_px}"/>
+	<mx:Text x="86.5" y="63" color="0xffffff" text="{_ix}"/>
+	<mx:Label x="118" y="37" text="像素坐标Y：" color="0xffffff"/>
+	<mx:Text x="176" y="37" color="0xffffff" text="{_py}"/>
+	<mx:Text x="176" y="63" color="0xffffff" text="{_iy}"/>
+	<mx:Label x="29" y="63" text="网格索引X：" color="0xffffff"/>
+	<mx:Label x="114.5" y="63" text="网格索引Y：" color="0xffffff"/>
+	
+</InfoPanel>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" 
+	width="534" height="364" creationComplete="initPanel(event)" 
+	removedEffect="{removeEffect}" creationCompleteEffect="{showEffect}">
+
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			private function initPanel(evet:Event):void{
+				addEventListener(MouseEvent.CLICK,closePanel);
+			}
+			
+			private function closePanel(evet:Event):void{
+				if(evet.target is LinkButton){
+					
+				}else{
+					removeEventListener(MouseEvent.CLICK,closePanel);
+					PopUpManager.removePopUp(this);
+				}
+			}
+			
+			private function clickEb163(evet:Event):void{
+				var url:URLRequest = new URLRequest("http://www.eb163.com");
+				navigateToURL(url, "_blank");
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:Fade alphaFrom="1" alphaTo="0" duration="1000" id="removeEffect" />
+	<mx:Fade alphaFrom="0" alphaTo="1" duration="1000" id="showEffect" />
+	<mx:Rotate duration="1500" id="imageShow" />
+
+
+	<mx:Text x="293" y="60" text="MapEditor v2.0"  height="38" fontFamily="Georgia" fontSize="20" color="#32B1CC"/>
+	<mx:Text x="185" y="165" text="技术制作：HeptaFish    Email：heptafish@163.com" fontFamily="Times New Roman" fontSize="12" height="21"/>
+	<mx:Text x="185" y="125" text="策划&amp;监制：Slkglk       Email：wx0417@qq.com" fontFamily="Times New Roman" fontSize="12"/>
+	<mx:Text x="185" y="210" text="友情支持：" fontFamily="Times New Roman" fontSize="12"/>
+	<mx:Image creationCompleteEffect="{imageShow}" x="39" y="74" source="@Embed(source='images/log.png')"/>
+	<mx:Text x="185" y="60" text="Hepta"  height="38" fontFamily="Georgia" fontSize="20" color="#006699"/>
+	<mx:Text x="241" y="60" text="Fish"  height="23" fontFamily="Georgia" fontSize="20" color="#FF6600"/>
+	<mx:Text x="363" y="210" text="web编程&amp;webgame编程社区" fontFamily="Times New Roman" fontSize="12"/>
+	<mx:LinkButton x="241" y="210" label="www.eb163.com"  click="clickEb163(event)"/>
+	
+</mx:Panel>
