@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns="*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="400" height="300" title="出口信息"
+	creationComplete="initForm(event)"
+	removedEffect="{removeEffect}" creationCompleteEffect="{showEffect}" layout="absolute" >
+	
+	<mx:Script>
+		<![CDATA[
+			import com.heptaFish.common.loader.impl.ImageLoader;
+			import com.heptaFish.common.config.Config;
+			import com.heptafish.mapeditor.events.MapEditorEvent;
+			import mx.managers.PopUpManager;
+			import mx.controls.Alert;
+			private var _mapX:Number;//地图X坐标
+			private var _mapY:Number;//地图Y坐标
+		
+			private function initForm(evet:Event):void{
+				nextMap.setFocus();
+			}
+			
+			private function submitHandler(evet:Event):void{
+				if(nextMap.text == null || nextMap.text == "" 
+				|| nextX.text == null || nextX.text == "" 
+				|| nextY.text == null || nextY.text == ""){
+					Alert.show("请将信息填写完整！");
+				}else{
+					
+//					var exitImagePath:String = Config.getString("exitImage");
+//					var exitImageLoader:ImageLoader = new ImageLoader();
+//					exitImageLoader.load(exitImagePath);
+//					exitImageLoader.addEventListener(Event.COMPLETE,newExitLoaded);
+					
+					var parObj:Object = new Object();
+					parObj.nextMap = nextMap.text;
+					parObj.nextX = nextX.text;
+					parObj.nextY = nextY.text;
+					parObj.nextInfo = nextInfo.text;
+					parObj.mouseX = _mapX;
+					parObj.mouseY = _mapY;
+					var meEvet:MapEditorEvent = new MapEditorEvent(MapEditorEvent.NEW_EXIT_SUBMIT);
+					meEvet._parObj = parObj;
+					dispatchEvent(meEvet);
+					PopUpManager.removePopUp(this);
+				}
+			}
+			
+//			private function newExitLoaded(evet:Event):void{
+//				var exitImageLoader:ImageLoader = ImageLoader(evet.target);
+//				exitImageLoader.removeEventListener(Event.COMPLETE,newExitLoaded);
+//				var parObj:Object = new Object();
+//				parObj.nextMap = nextMap.text;
+//				parObj.nextX = nextX.text;
+//				parObj.nextY = nextY.text;
+//				parObj.nextInfo = nextInfo.text;
+//				parObj.mouseX = _mapX;
+//				parObj.mouseY = _mapY;
+//				parObj.exitBitMap = new Bitmap(exitImageLoader._data);
+//				var meEvet:MapEditorEvent = new MapEditorEvent(MapEditorEvent.NEW_EXIT_SUBMIT);
+//				meEvet._parObj = parObj;
+//				dispatchEvent(meEvet);
+//				PopUpManager.removePopUp(this);
+//			}
+			
+			private function cancelHandler(evet:Event):void{
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function setMap(parObj:Object):void{
+				this._mapX = parObj.mapX;
+				this._mapY = parObj.mapY;
+			}
+		]]>
+	</mx:Script>
+	
+	
+	
+	
+	
+	
+	
+	
+	<mx:Fade alphaFrom="1" alphaTo="0" duration="1000" id="removeEffect" />
+	<mx:Fade alphaFrom="0" alphaTo="1" duration="1000" id="showEffect" />
+	
+	
+	
+	
+	
+	
+	<mx:Label x="87" y="29" text="下一地图名称："/>
+	<mx:Label x="87" y="64" text="初始X坐标："/>
+	<mx:Label x="87" y="94" text="初始Y坐标："/>
+	<mx:TextInput x="170" y="27" width="100.5" id="nextMap" text="test"/>
+	<mx:TextInput x="170" y="62" width="100.5" id="nextX" text=""/>
+	<mx:TextInput x="170" y="92" width="100.5" id="nextY" text=""/>
+	<mx:TextInput x="170" y="127" width="100.5" id="nextInfo" text=""/>
+	<mx:Label x="87" y="129" text="提示信息："/>
+	<mx:Button click="submitHandler(event)" x="97" y="190" label="确定" width="65"/>
+	<mx:Button click="cancelHandler(event)" x="205" y="190" label="取消" width="65.5"/>
+	
+</mx:Panel>

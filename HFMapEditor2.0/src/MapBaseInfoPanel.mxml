@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InfoPanel xmlns="*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	height="175" width="225" title="地图基本信息" titleStyleName="panelTitle"
+	>
+	
+	<mx:Style>
+		.panelTitle{
+			color : #ffffff;	
+		}
+	</mx:Style>
+	
+	<mx:Script>
+		<![CDATA[
+		
+			[Bindable]
+			private var _mapWidth:String;
+			[Bindable]
+			private var _mapHeight:String;
+			[Bindable]
+			private var _mapName:String;
+			[Bindable]
+			private var _col:String;
+			[Bindable]
+			private var _row:String;
+			[Bindable]
+			private var _cellW:String;
+			[Bindable]
+			private var _cellH:String;
+			[Bindable]
+			private var _loadType:String;
+			
+			//填充内容信息
+			public function createContent(obj:Object):void{
+				_mapWidth = obj.mapWidth + "";
+				_mapHeight = obj.mapHeight + "";
+				_mapName = obj.mapName + "";
+				_col = obj.col + "";
+				_row = obj.row + "";
+				_cellW = obj.cellW + "";
+				_cellH = obj.cellH + "";
+				var loadType:String = obj.loadType;
+				if(loadType == "0"){
+					_loadType = "单一文件模式";
+				}else if(loadType == "1"){
+					_loadType = "栅格文件模式";
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Label x="29" y="36" text="地图名称：" color="0xffffff"/>
+	<mx:Label x="29" y="62" text="宽：" color="0xffffff"/>
+	<mx:Label x="109" y="62" text="高：" color="0xffffff"/>
+	<mx:Text id="mapWidth" x="62" y="62" text="{_mapWidth}" color="0xffffff"/>
+	<mx:Text id="mapHeight" x="137" y="62" text="{_mapHeight}" color="0xffffff"/>
+	<mx:Text id="mapName" x="92" y="36" text="{_mapName}" color="0xffffff"/>
+	<mx:Label x="29" y="88" text="网格宽度：" color="0xffffff"/>
+	<mx:Text id="cellW" x="92" y="88" text="{_cellW}" color="0xffffff"/>
+	<mx:Text id="col" x="92" y="114" text="{_col}" color="0xffffff"/>
+	<mx:Label x="122" y="88" text="网格高度：" color="0xffffff"/>
+	<mx:Text id="cellH" x="177" y="88" text="{_cellH}" color="0xffffff"/>
+	<mx:Text id="row" x="177" y="114" text="{_row}" color="0xffffff"/>
+	<mx:Label x="29" y="114" text="横向节点：" color="0xffffff"/>
+	<mx:Label x="122" y="114" text="纵向节点：" color="0xffffff"/>
+	<mx:Label x="29" y="140" text="地图载入模式：" color="0xffffff"/>
+	<mx:Text id="loadTypeEle" x="106" y="140" text="{_loadType}" color="0xffffff"/>
+	
+</InfoPanel>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<param name="server" value="localhost" />
+	<param name="serverPort" value="8081" />
+	<param name="imageLibType" value="file" />
+	<param name="exitImage" value="images/exit/1.png" />
+	<param name="exitImageRow" value="1" />
+	<param name="exitImageCol" value="5" />
+	
+	<resources dec="resources">
+		<!--<classParam name="eleStore" url="data/eleStore.swf"/>-->
+	</resources>
+</config>

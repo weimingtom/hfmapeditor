@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Panel xmlns:mx="http://www.adobe.com/2006/mxml" 
+ layout="absolute" width="400" height="340" title="地图基本信息"
+	creationComplete="initForm(event)"
+	removedEffect="{removeEffect}" creationCompleteEffect="{showEffect}"
+	>
+	<!-- 创建地图时显示的面板 -->
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.utils.StringUtil;
+			import com.heptafish.mapeditor.events.MapEditorEvent;
+			
+			import mx.managers.PopUpManager;
+			
+			private var _file:File;
+            private const _mapImageFilter:FileFilter = new FileFilter("Images","*.png;*.jpg;*.gif");//文件定义
+            
+			[Bindable]
+			private var loadTypeList:ArrayCollection = new ArrayCollection();
+			
+			private function initForm(evet:Event):void{
+				_file = File.applicationDirectory;
+				selectFile.addEventListener(MouseEvent.CLICK,selectFileHandler);
+				submitForm.addEventListener(MouseEvent.CLICK,submitHandler);
+				cancelBtn.addEventListener(MouseEvent.CLICK,cancelHandler);
+				loadTypeList.addItem({label:"单一文件模式",data:"0"});
+				loadTypeList.addItem({label:"栅格切块模式",data:"1"});
+				mapName.setFocus();
+			}
+			
+			private function selectFileHandler(evet:Event):void{
+				_file.browseForOpen("选择图片文件",[_mapImageFilter]);
+                _file.addEventListener(Event.SELECT,fileSelectHanlder);
+                _file.addEventListener(Event.COMPLETE,fileCompleteHanlder);
+                _file.addEventListener(ProgressEvent.PROGRESS,fileProgressHanlder);
+			}
+			
+			
+			private function fileSelectHanlder(evet:Event):void{
+				mapFilePath.text = _file.nativePath;
+			}
+			private function fileCompleteHanlder(evet:Event):void{
+				
+			}
+			private function fileProgressHanlder(evet:Event):void{
+				
+			}
+			
+			private function submitHandler(evet:Event):void{
+				if(mapName.text == null || mapName.text == "" || mapWidth.text == null || mapWidth.text == ""
+				|| mapHeight.text == null || mapHeight.text == "" || cellWidth.text == null || cellWidth.text == ""
+				|| cellHeight.text == null || cellHeight.text == "" || mapFilePath.text == null || mapFilePath.text == ""){
+					Alert.show("请将信息填写完整！");
+				}else{
+					if("1" == loadType.value && (sliceWidth.text == null || sliceWidth.text==""||sliceHeight.text == null || sliceHeight.text=="" )){
+						Alert.show("必须填入拆分后单元高宽！");
+					}else{
+						var mapEvent:MapEditorEvent = new MapEditorEvent(MapEditorEvent.NEWMAPINFO_SUBMIT);
+						mapEvent.mapName = mapName.text;
+						try{
+							mapEvent.mapWidth = parseFloat(mapWidth.text);
+							mapEvent.mapHeight = parseFloat(mapHeight.text);
+							mapEvent.cellWidth = parseFloat(cellWidth.text);
+							mapEvent.cellHeight = parseFloat(cellHeight.text);
+							mapEvent.mapImageFilePath = mapFilePath.text;
+							mapEvent.loadType = String(loadType.value);
+							mapEvent.sliceWidth = parseFloat(sliceWidth.text);
+							mapEvent.sliceHeight = parseFloat(sliceHeight.text);
+						}catch(er:Error){
+							Alert.show("应该填写数字的地方请填写数字！");
+						}
+						dispatchEvent(mapEvent);
+						PopUpManager.removePopUp(this);
+					}
+				}
+			}
+			
+			private function cancelHandler(evet:Event):void{
+				selectFile.removeEventListener(MouseEvent.CLICK,selectFileHandler);
+				submitForm.removeEventListener(MouseEvent.CLICK,submitHandler);
+				cancelBtn.removeEventListener(MouseEvent.CLICK,cancelHandler);
+				PopUpManager.removePopUp(this);
+			}
+			
+			public function closeForm():void{
+				selectFile.removeEventListener(MouseEvent.CLICK,selectFileHandler);
+				submitForm.removeEventListener(MouseEvent.CLICK,submitHandler);
+				cancelBtn.removeEventListener(MouseEvent.CLICK,cancelHandler);
+				PopUpManager.removePopUp(this);
+			}
+			
+			private function loadTypeChange(evet:Event):void{
+				var loadTypeValue:String = String(loadType.value);
+				if("0" == loadTypeValue){
+					sliceInfo.visible = false;
+					sliceInfo2.visible = false;
+				}else if("1" == loadTypeValue){
+					sliceInfo.visible = true;
+					sliceInfo2.visible = true;
+				}
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Fade alphaFrom="1" alphaTo="0" duration="1000" id="removeEffect" />
+	<mx:Fade alphaFrom="0" alphaTo="1" duration="1000" id="showEffect" />
+	<mx:Rotate duration="1500" id="imageShow" />
+
+	<mx:Label x="33" y="29" text="地图名称："/>
+	<mx:Label x="33" y="64" text="地图宽度："/>
+	<mx:Label x="162.5" y="64" text="地图高度："/>
+	<mx:Label x="33" y="100" text="单元格宽度："/>
+	<mx:Label x="162.5" y="100" text="单元格高度："/>
+	<mx:Label x="33" y="183" text="加载模式："/>
+	<mx:Label x="33" y="142" text="地图文件："/>
+	<mx:TextInput x="96" y="27" width="188" id="mapName" text="test"/>
+	<mx:TextInput x="96" y="62" width="58.5" id="mapWidth" text="3840"/>
+	<mx:TextInput x="225.5" y="62" width="58.5" id="mapHeight" text="3360"/>
+	<mx:TextInput x="96" y="98" width="58.5" id="cellWidth" text="60"/>
+	<mx:TextInput x="225.5" y="98" width="58.5" id="cellHeight" text="30"/>
+	<mx:TextInput x="96" y="140" width="188" id="mapFilePath" enabled="false"/>
+	<mx:Button id="selectFile" x="292" y="140" label="选择"/>
+	<mx:Button id="submitForm" x="96" y="291" label="确定"/>
+	<mx:Button id="cancelBtn" x="202" y="291" label="取消"/>
+	<mx:ComboBox id="loadType" x="96" y="181" dataProvider="{loadTypeList}" change="loadTypeChange(event)"></mx:ComboBox>
+	<mx:HBox x="33" y="220" width="80%" id="sliceInfo" visible="true">
+		<mx:Label text="拆分单元宽度："/>
+		<mx:TextInput width="58.5" id="sliceWidth" text=""/>
+		<mx:Label text="拆分单元高度："/>
+		<mx:TextInput width="58.5" id="sliceHeight" text=""/>
+	</mx:HBox>
+	<mx:HBox x="33" y="250" width="80%" id="sliceInfo2" visible="true">
+		<mx:Label text="横向加载屏数："/>
+		<mx:TextInput width="58.5" id="preloadX" text="3"/>
+		<mx:Label text="纵向加载屏数："/>
+		<mx:TextInput width="58.5" id="preloadY" text="3"/>
+	</mx:HBox>
+	
+</mx:Panel>
