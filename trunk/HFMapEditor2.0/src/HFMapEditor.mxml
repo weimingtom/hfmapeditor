@@ -66,7 +66,7 @@
 			
 			public var _buildBrush:Building;//建筑笔刷
 			
-			private var _mapDataFileFilter:FileFilter = new FileFilter("hfMapData", "*.hfmd");//地图文件过滤
+			private var _mapDataFileFilter:FileFilter = new FileFilter("hfMapData", "*.xml");//地图文件过滤
 			private var _mapDataSelectFile:File;
 			
 			private var _loadType:String;//加载模式
@@ -561,7 +561,7 @@
 				for each(var exit:Exit in exitArr){
 					_mapXml.mapExits.appendChild(exit.configXML);
 				}
-				var writer:HeptaFishXmlWriter = new HeptaFishXmlWriter(_mapXml,"/data/maps/" + _mapName + ".hfmd");
+				var writer:HeptaFishXmlWriter = new HeptaFishXmlWriter(_mapXml,"/data/maps/" + _mapName + ".xml");
 				writer.writeFun();
 			}
 			//a,s,w,d移动编辑区域
